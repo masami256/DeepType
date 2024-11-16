@@ -1861,7 +1861,7 @@ void CallGraphPass::FindCalleesWithSMLTA(CallInst *CI) {
 	Value *CV = CI->getCalledOperand();
 	Type *LayerTy = CV->getType();
 	MLTypeName = SingleType2String(LayerTy);
-	
+
 	if (isClassType(MLTypeName)) {
 		MLTypeName = GenClassTyName(MLTypeName);
 		// Deal with virtual functions
@@ -2176,6 +2176,107 @@ void CallGraphPass::FindCalleesWithSMLTA(CallInst *CI) {
 	return;
 }
 
+void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
+	std::string MLTypeName; // Call site's type
+	FuncSet FS;
+	
+	// Get Caller's multi-layer type
+	Value *CV = CI->getCalledOperand();
+	Type *LayerTy = CV->getType();
+	MLTypeName = SingleType2String(LayerTy);
+
+	if (isClassType(MLTypeName)) {
+		MLTypeName = GenClassTyName(MLTypeName);
+		// Deal with virtual functions
+		auto ai = CI->arg_begin();
+		Value *arg0 = *ai;
+		if (LoadInst *LI = dyn_cast<LoadInst>(arg0)) {
+			Value *LIop = LI->getOperand(0);
+			if (DerivedClassMap.find(LIop) != DerivedClassMap.end()) {
+				std::string classTyName = DerivedClassMap[LIop];
+				int index = MLTypeName.find("|");
+				MLTypeName = MLTypeName.substr(0, index+1) + classTyName;
+			}
+		}
+		FS = MLTypeFuncMap[stringHash(MLTypeName)];
+			
+	}
+	else {	
+		MLTypeName = GenerateMLTypeName(CV, MLTypeName);
+	
+		// If the called value can be traced back to an AllocaInst in ArgAllocSet
+		// This call site has incomplete type, use "&" to mark it
+		if (AIFlag == true) {
+			AIFlag = false; // turn off AIFlag
+			if (ArgAllocaSet.find(RecordAI) != ArgAllocaSet.end()) {
+				MLTypeName += "|&";
+			}
+		}
+	}
+
+	if (TargetLookupMap.find(stringHash(MLTypeName)) != TargetLookupMap.end()) {
+		FS = TargetLookupMap[stringHash(MLTypeName)];
+	}		
+	else {
+		// Initialize FS, it will be enlarged later
+		FS = MLTypeFuncMap[stringHash(MLTypeName)];
+		ExhaustiveSearch4FriendTypes(MLTypeName);		
+		StrSet FTySet;
+		FTySet = FriendTyMap[MLTypeName];
+		StrSet MatchedTySet;	// Types match with CheckType
+		StrSet AllMatchedTySet;	// Types match with all elements in FTySet
+		StrSet CumuTySet;
+
+		for (std::set<std::string>::iterator TSit = FTySet.begin(); TSit != FTySet.end(); TSit++) {
+			std::string CheckType = *TSit;
+			list<std::string> CheckTyList;
+			CheckTyList = MLTypeName2List(CheckType);
+			// Lookup the cache for matched types
+			MatchedTySet = MatchedTyMap[stringHash(CheckType)];
+
+			// Initialize the sets
+			MatchedTySet.clear();
+			CumuTySet.clear();
+			
+			std::string FirstLayer = CheckTyList.front();
+			CheckTyList.pop_front();
+			CumuTySet.insert(FirstLayer);
+
+			if (!MatchedTySet.empty()) {
+				AllMatchedTySet.insert(MatchedTySet.begin(), MatchedTySet.end());
+				continue;
+			}
+			
+			if (CheckTyList.empty()) {	// Single-layer type
+				//errs() << "single-layer " << "\n";
+				MatchedTySet = AddFuzzyTypeAndCopySet(CumuTySet);
+				AllMatchedTySet.insert(MatchedTySet.begin(), MatchedTySet.end());
+			}
+			MatchedTyMap[stringHash(CheckType)] = MatchedTySet;
+		}
+		// Remove the functions that are not address-taken
+		FuncSet ATFS;
+		for (auto F: FS) {
+			if (F->hasAddressTaken()) {
+				ATFS.insert(F);
+			}
+		}
+		FS = ATFS;
+		
+		// Record in TargetLoopupMap;
+		TargetLookupMap[stringHash(MLTypeName)] = FS;
+	}
+
+	Function *Caller = CI->getFunction();
+
+	OP << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << "FS.size: " << FS.size() << "\n";
+	// Statistics
+	errs() << "\n";
+	PrintResults(CI, FS, MLTypeName);
+	errs() << "\n";
+	errs() << "\n";
+}
+
 void CallGraphPass::PrintMaps() {
 
 	errs() << "========== MLTypeFuncMap ==========" << "\n";
@@ -2329,6 +2430,7 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 				}
 				// Direct call
 				else {
+					FindCalleesForDirectCall(CI);
 					// Not goal of this work
 					Ctx->DirectCallInsts.push_back(CI);
 				}

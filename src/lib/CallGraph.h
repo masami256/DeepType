@@ -115,6 +115,7 @@ class CallGraphPass : public IterativeModulePass {
 		void CalculateVariantTypes(std::string TyStr);
 		
 		void FindCalleesWithSMLTA(CallInst *CI);
+		void FindCalleesForDirectCall(CallInst *CI);
 		void ExhaustiveSearch4FriendTypes(std::string Search4Type);
 		FuncSet FSMerge(FuncSet FS1, FuncSet FS2);
 		FuncSet FSIntersect(FuncSet FS1, FuncSet FS2);
