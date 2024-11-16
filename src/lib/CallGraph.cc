@@ -2133,7 +2133,7 @@ void CallGraphPass::FindCalleesWithSMLTA(CallInst *CI) {
 		TargetLookupMap[stringHash(MLTypeName)] = FS;
 	}
 	
-			
+	CreateJsonData(CI, FS);
 	// Statistics
 	errs() << "\n";
 	PrintResults(CI, FS, MLTypeName);
@@ -2272,9 +2272,31 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 	OP << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << "FS.size: " << FS.size() << "\n";
 	// Statistics
 	errs() << "\n";
+	CreateJsonData(CI, FS);
 	PrintResults(CI, FS, MLTypeName);
 	errs() << "\n";
 	errs() << "\n";
+}
+
+void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS) {
+	// Print Call site index
+	string Caller = CI->getFunction()->getName().str();
+	Module *M = CI->getParent()->getParent()->getParent();
+
+	if (FS.empty()) {
+		string Callee = CI->getCalledOperand()->getName().str();
+		OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
+	} else {
+		vector<std::string> FuncNameVec;
+		for (Function *F : FS) {
+			FuncNameVec.push_back(F->getName().str());
+		}
+		std::sort(FuncNameVec.begin(), FuncNameVec.end());
+		for (std::string Callee:FuncNameVec){
+			OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
+		}
+	}
+		
 }
 
 void CallGraphPass::PrintMaps() {

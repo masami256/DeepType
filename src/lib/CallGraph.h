@@ -133,7 +133,7 @@ class CallGraphPass : public IterativeModulePass {
 		StrSet UpdateCumuTySet(StrSet CumuTySet, int map, std::string LayerType);
 		StrSet CoverAll(StrSet CumuTySet, int map);
 		void printSet(StrSet Set);
-
+		void CreateJsonData(CallInst *CI, FuncSet FS);
 	public:
 		CallGraphPass(GlobalContext *Ctx_)
 			: IterativeModulePass(Ctx_, "CallGraph") { }
