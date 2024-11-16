@@ -1,5 +1,5 @@
 CUR_DIR = $(shell pwd)
-LLVM_BUILD := /path/to/llvm-15/build
+LLVM_BUILD := /home/masami/projects/mlta/llvm-project/build
 ANALYZER_DIR := ${CUR_DIR}/src
 ANALYZER_BUILD := ${CUR_DIR}/build
 

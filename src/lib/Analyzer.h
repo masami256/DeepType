@@ -105,6 +105,9 @@ struct GlobalContext {
 	// Indirect call instructions.
 	std::vector<CallInst *>IndirectCallInsts;
 
+	// Indirect call instructions.
+	std::vector<CallInst *>DirectCallInsts;
+
 	// Modules.
 	ModuleList Modules;
 	ModuleNameMap ModuleMaps;

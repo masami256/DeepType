@@ -119,6 +119,7 @@ void PrintResults(GlobalContext *GCtx) {
 		AveIndirectTargets = (float)GCtx->NumIndirectCallTargets/(float)WithTargetIndirectCalls;
 
 	OP<<"############## DeepType Result Statistics ##############\n";
+	OP<<"# Number of direct calls: \t\t\t"<<GCtx->DirectCallInsts.size()<<"\n";
 	OP<<"# Number of indirect calls: \t\t\t"<<GCtx->IndirectCallInsts.size()<<"\n";
 	OP<<"# Number of indirect-call targets: \t\t"<<GCtx->NumIndirectCallTargets<<"\n";
 	OP<<"# Number of address-taken functions: \t\t"<<GCtx->AddressTakenFuncs.size()<<"\n";
