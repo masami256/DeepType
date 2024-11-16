@@ -2330,6 +2330,7 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 				// Direct call
 				else {
 					// Not goal of this work
+					Ctx->DirectCallInsts.push_back(CI);
 				}
 			}
 		}
