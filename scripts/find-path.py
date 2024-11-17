@@ -4,18 +4,20 @@ import pickle
 import sys
 import networkx as nx
 
-def find_paths_memory_optimized(graph, target):
-    """Find all paths leading to the target node using less memory."""
+def find_paths_memory_optimized(graph, target, max_paths=20):
+    """Find all paths leading to the target node with a path limit."""
     paths = []
     stack = [(target, None)]  # Stack holds (current_node, parent_node)
     parent_map = {}  # To reconstruct paths later
+    path_count = 0  # Counter for paths found
 
     while stack:
         current, parent = stack.pop()
         if current not in parent_map:
             parent_map[current] = parent  # Record the parent node
 
-            for predecessor in graph.predecessors(current):
+            # Add predecessors to the stack, sorted by in-degree (optional priority)
+            for predecessor in sorted(graph.predecessors(current), key=lambda x: graph.in_degree(x)):
                 stack.append((predecessor, current))
 
     # Reconstruct paths from the parent map
@@ -29,6 +31,10 @@ def find_paths_memory_optimized(graph, target):
     for node in parent_map:
         if graph.in_degree(node) == 0:  # Source node
             paths.append(reconstruct_path(node))
+            path_count += 1
+            if path_count >= max_paths:
+                print(f"Path limit ({max_paths}) reached. Stopping exploration.")
+                return paths
 
     return paths
 
