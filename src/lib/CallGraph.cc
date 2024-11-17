@@ -1302,11 +1302,13 @@ bool CallGraphPass::CollectInformation(Module *M) {
 #ifdef DTnoSH
 		goto POS3;
 #endif
-			
+		// system calls like __ia32_sys_futex_waitv are skipped because use_empty() returns true.
+		// so, comment out this check.
 		// Skip dead functions: Special handling 3
-		if (F.use_empty() && (F.getName().str() != "main")) {			
-			continue;
-		}
+		// if (F.use_empty() && (F.getName().str() != "main")) {	
+		// 	OP << "SKIP: " << F.getName() << "\n";
+		// 	continue;
+		// }
 
 		POS3:	
 		// Record arguments in ArgSet, the type of arg is an incomplete type
@@ -1316,8 +1318,11 @@ bool CallGraphPass::CollectInformation(Module *M) {
 			ArgSet.insert(arg);
 		}
 
-		if (F.isDeclaration())
-			continue;
+		// system call is not called from anywhere so do not skip it.
+		// if (F.isDeclaration()) {
+		// 	continue;
+		// }
+			
 			
 		// Collect address-taken functions.
 		if (F.hasAddressTaken()) {
@@ -1326,7 +1331,6 @@ bool CallGraphPass::CollectInformation(Module *M) {
 
 		for (inst_iterator i = inst_begin(F), e = inst_end(F); i != e; ++i) {
 			Instruction *I = &*i;
-
 #ifdef DTnoSH
 			goto POS1;
 #endif
@@ -2486,10 +2490,12 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 	for (Module::iterator f = M->begin(), fe = M->end(); f != fe; ++f) {		
 		Function *F = &*f;
 		OP << "Module: " << M->getName() << "\n";
+		// system calls like __ia32_sys_futex_waitv are skipped because use_empty() returns true.
+		// so, comment out this check.
 		// Skip dead functions
-		if (F->use_empty() && (F->getName().str() != "main")) {
-			continue;
-		}
+		// if (F->use_empty() && (F->getName().str() != "main")) {
+		// 	continue;
+		// }
 
 		DerivedClassMap.clear();		
 		for (inst_iterator i = inst_begin(F), e = inst_end(F); i != e; ++i) {			
