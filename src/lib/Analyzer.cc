@@ -185,6 +185,8 @@ int main(int argc, char **argv) {
 	std::cout << "Stage 1 " << std::chrono::duration_cast<std::chrono::milliseconds>(mid-start).count() << " ms" << std::endl;
 	std::cout << "Stage 2 " << std::chrono::duration_cast<std::chrono::milliseconds>(end-mid).count() << " ms" << std::endl;
 	std::cout << "total " << std::chrono::duration_cast<std::chrono::milliseconds>(end-start).count() << " ms" << std::endl;
+
+
 	return 0;
 }
 

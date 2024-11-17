@@ -46,6 +46,10 @@ using namespace std;
 
 extern cl::opt<unsigned> VerboseLevel;
 
+// Call graph
+typedef std::vector<std::string> FunctionPair; // [Caller, Callee]
+typedef std::vector<FunctionPair> FunctionPairs; // Array of FunctionPair
+
 //
 // Common functions
 //

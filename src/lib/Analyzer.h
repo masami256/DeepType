@@ -44,10 +44,6 @@ typedef DenseMap<Function*, CallInstSet> CallerMap;
 typedef DenseMap<CallInst *, FuncSet> CalleeMap;
 typedef std::pair<std::string, AllocaInst*> TyRepkeypair;
 
-// Call graph
-typedef std::vector<std::vector<std::string>> CallerCallerPair;        // [["string", "string"], ...]
-typedef std::vector<CallerCallerPair> JsonArray;             // [[["string", "string"], ...], ...]
-
 struct GlobalContext {
 
 	GlobalContext() {
@@ -115,9 +111,6 @@ struct GlobalContext {
 	ModuleList Modules;
 	ModuleNameMap ModuleMaps;
 	std::set<std::string> InvolvedModules;
-
-	// Call Graph
-	JsonArray JsonData;
 };
 
 class IterativeModulePass {

@@ -78,7 +78,9 @@ class CallGraphPass : public IterativeModulePass {
 		// For evaluation use
 		static std::set<std::string> ManyTargetType;
 		
-		
+		// Call graph in this module
+		FunctionPairs FunctionPairVec;
+
 		// ==================Functions====================
 		void IterativeGlobalVariable(GlobalVariable *GVouter, GlobalVariable *GVinner, Value *v);
 		void GVTypeFunctionRecord(GlobalVariable *GV, Function *F, Value *v, std::string FTyName);
@@ -134,6 +136,8 @@ class CallGraphPass : public IterativeModulePass {
 		StrSet CoverAll(StrSet CumuTySet, int map);
 		void printSet(StrSet Set);
 		void CreateJsonData(CallInst *CI, FuncSet FS);
+		void AddCallGraph(const string &ModuleName, string &Caller, vector<std::string> &Callees);
+
 	public:
 		CallGraphPass(GlobalContext *Ctx_)
 			: IterativeModulePass(Ctx_, "CallGraph") { }

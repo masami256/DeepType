@@ -2269,34 +2269,45 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 
 	Function *Caller = CI->getFunction();
 
-	OP << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << "FS.size: " << FS.size() << "\n";
+	//OP << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << "FS.size: " << FS.size() << "\n";
 	// Statistics
-	errs() << "\n";
 	CreateJsonData(CI, FS);
-	PrintResults(CI, FS, MLTypeName);
-	errs() << "\n";
-	errs() << "\n";
+	//PrintResults(CI, FS, MLTypeName);
+	//errs() << "\n";
+	//errs() << "\n";
+}
+
+void CallGraphPass::AddCallGraph(const string &ModuleName, string &Caller, vector<std::string> &Callees)
+{
+	for (string Callee : Callees) {
+		if (Callee.compare(0, 5, "llvm.") != 0) {
+			//OP << "Add: " << Caller << " , " << Callee << "\n";
+			FunctionPair pair = {Caller, Callee};
+			FunctionPairVec.push_back(pair);
+		}
+	}
 }
 
 void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS) {
 	// Print Call site index
 	string Caller = CI->getFunction()->getName().str();
 	Module *M = CI->getParent()->getParent()->getParent();
+	vector<std::string> CalleeFuncNameVec;
 
 	if (FS.empty()) {
 		string Callee = CI->getCalledOperand()->getName().str();
-		OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
+		CalleeFuncNameVec.push_back(Callee);
+		//OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
 	} else {
-		vector<std::string> FuncNameVec;
 		for (Function *F : FS) {
-			FuncNameVec.push_back(F->getName().str());
+			CalleeFuncNameVec.push_back(F->getName().str());
 		}
-		std::sort(FuncNameVec.begin(), FuncNameVec.end());
-		for (std::string Callee:FuncNameVec){
-			OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
-		}
+		std::sort(CalleeFuncNameVec.begin(), CalleeFuncNameVec.end());
+		//for (std::string Callee:CalleeFuncNameVec){
+		//	OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
+		//}
 	}
-		
+	AddCallGraph(M->getName().str(), Caller, CalleeFuncNameVec);
 }
 
 void CallGraphPass::PrintMaps() {
@@ -2414,6 +2425,48 @@ StrSet CallGraphPass::UpgradeTypeRelationshipMap(std::string key, bool first) {
 	return S1;
 }
 
+string getFileName(const std::string& filePath) {
+    size_t pos = filePath.find_last_of("/\\"); // Find the last path separator
+    if (pos != std::string::npos) {
+        return filePath.substr(pos + 1); // Return everything after the last separator
+    }
+    return filePath; // If no separator, return the whole string
+}
+
+// Helper function to get the directory path from a file path
+string getDirectory(const std::string& filePath) {
+    size_t pos = filePath.find_last_of("/\\");
+    if (pos != std::string::npos) {
+        return filePath.substr(0, pos + 1); // Return the directory part
+    }
+    return "./"; // If no directory is found, return the current directory
+}
+
+// Helper function to change the file extension of a given file path
+string changeExtension(const std::string& filePath, const std::string& newExtension) {
+    size_t pos = filePath.find_last_of('.');
+    if (pos != std::string::npos) {
+        return filePath.substr(0, pos) + newExtension; // Replace the existing extension
+    }
+    return filePath + newExtension; // Append the new extension if none exists
+}
+
+
+static void Write2Json(std::ostream& os, const FunctionPairs &FunctionPairVec) {
+    os << "[\n";
+    bool firstPair = true; // Used to handle commas between JSON objects
+    for (size_t i = 0; i < FunctionPairVec.size(); ++i) {
+        const FunctionPair& pair = FunctionPairVec[i];
+        if (!firstPair) {
+            os << ",\n"; // Add a comma between JSON objects
+        }
+        firstPair = false;
+
+        // Output each function pair as a JSON object
+        os << "  [\"" << pair[0] << "\" , \"" << pair[1] << "\"]";
+    }
+    os << "\n]\n"; // Close the JSON array
+}
 bool CallGraphPass::IdentifyTargets(Module *M) {
 	
 	//PrintMaps();
@@ -2460,6 +2513,17 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 		}
 	}
 	
+	string moduleName = getFileName(M->getName().str());
+	string directory = getDirectory(M->getName().str());
+	string outputFilePath = directory + "callgraph-" + moduleName + ".json";
+	OP << "outputFilePath : " << outputFilePath << "\n";
+	std::ofstream outFile(outputFilePath);
+    if (!outFile) {
+        std::cerr << "Failed to open file for writing.\n";
+        return 1;
+    }
+	Write2Json(outFile, FunctionPairVec);
+	OP << "output to " << outputFilePath << "\n";
 	//for (auto it=LayerNumSet.cbegin(); it!=LayerNumSet.cend(); it++) {
 	//	errs() << *it << " ";
 	//}
