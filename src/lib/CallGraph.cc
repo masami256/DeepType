@@ -2280,7 +2280,8 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 void CallGraphPass::AddCallGraph(const string &ModuleName, string &Caller, vector<std::string> &Callees)
 {
 	for (string Callee : Callees) {
-		if (Callee.compare(0, 5, "llvm.") != 0) {
+		if (Callee.compare(0, 5, "llvm.") != 0 &&
+			!Callee.empty()) {
 			//OP << "Add: " << Caller << " , " << Callee << "\n";
 			FunctionPair pair = {Caller, Callee};
 			FunctionPairVec.push_back(pair);
@@ -2467,6 +2468,14 @@ static void Write2Json(std::ostream& os, const FunctionPairs &FunctionPairVec) {
     }
     os << "\n]\n"; // Close the JSON array
 }
+
+void RemoveDuplicated(FunctionPairs &FunctionPairVec) {
+	std::sort(FunctionPairVec.begin(), FunctionPairVec.end());
+
+	auto last = std::unique(FunctionPairVec.begin(), FunctionPairVec.end());
+	FunctionPairVec.erase(last, FunctionPairVec.end());
+}
+
 bool CallGraphPass::IdentifyTargets(Module *M) {
 	
 	//PrintMaps();
@@ -2522,8 +2531,11 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
         std::cerr << "Failed to open file for writing.\n";
         return 1;
     }
+	RemoveDuplicated(FunctionPairVec);
 	Write2Json(outFile, FunctionPairVec);
 	OP << "output to " << outputFilePath << "\n";
+	FunctionPairVec.clear();
+
 	//for (auto it=LayerNumSet.cbegin(); it!=LayerNumSet.cend(); it++) {
 	//	errs() << *it << " ";
 	//}
