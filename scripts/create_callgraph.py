@@ -55,8 +55,8 @@ def main():
             print(f"Error processing file {json_file}: {e}")
 
     # Output graph information
-    print(f"Nodes: {unified_call_graph.nodes()}")
-    print(f"Edges: {unified_call_graph.edges()}")
+    #print(f"Nodes: {unified_call_graph.nodes()}")
+    #print(f"Edges: {unified_call_graph.edges()}")
 
     # Save the graph in Pickle format
     output_path_pickle = os.path.join(output_directory, "unified_call_graph.pkl")

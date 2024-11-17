@@ -67,7 +67,7 @@ void IterativeModulePass::run(ModuleList &modules) {
       OP << "\n";
     }
   }
-  OP << "\n";
+  //OP << "\n";
 
   mid = std::chrono::system_clock::now();
 
@@ -169,7 +169,7 @@ int main(int argc, char **argv) {
 		GlobalCtx.Modules.push_back(std::make_pair(Module, MName));
 		GlobalCtx.ModuleMaps[Module] = InputFilenames[i];
 	}
-
+	OP << "======================\n";
 	//
 	// Main workflow
 	//

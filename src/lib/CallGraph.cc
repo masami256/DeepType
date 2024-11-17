@@ -1445,6 +1445,7 @@ void CallGraphPass::PrintResults(CallInst *CI, FuncSet FS, std::string MLTypeNam
 	
 	if (FS.empty()){
 		errs() << "No target." << "\n";
+		//OP << "Caller: " << CI->getFunction()->getName().str() << " : Callee: " << CI->getCalledOperand()->getName() << "\n";
 	}
 	else {
 		vector<std::string> FuncNameVec;
@@ -2137,7 +2138,7 @@ void CallGraphPass::FindCalleesWithSMLTA(CallInst *CI) {
 	// Statistics
 	errs() << "\n";
 	PrintResults(CI, FS, MLTypeName);
-	//errs() << FS.size() << "\n";
+	errs() << FS.size() << "\n";
 		
 	Ctx->NumIndirectCallTargets += FS.size();
 	
@@ -2254,10 +2255,10 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 			}
 			MatchedTyMap[stringHash(CheckType)] = MatchedTySet;
 		}
-		// Remove the functions that are not address-taken
+		// Remove the functions that are address-taken
 		FuncSet ATFS;
 		for (auto F: FS) {
-			if (F->hasAddressTaken()) {
+			if (!F->hasAddressTaken()) {
 				ATFS.insert(F);
 			}
 		}
@@ -2269,15 +2270,16 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 
 	Function *Caller = CI->getFunction();
 
-	//OP << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << "FS.size: " << FS.size() << "\n";
+	// if (Caller->getName() == "ksys_read")
+	//OP << "TEST: " << __func__ << " : " << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << " : FS.size : " << FS.size() << "\n";
 	// Statistics
 	CreateJsonData(CI, FS);
-	//PrintResults(CI, FS, MLTypeName);
-	//errs() << "\n";
-	//errs() << "\n";
+	PrintResults(CI, FS, MLTypeName);
+	errs() << "\n";
+	errs() << "\n";
 }
 
-void CallGraphPass::AddCallGraph(const string &ModuleName, string &Caller, vector<std::string> &Callees)
+void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees)
 {
 	for (string Callee : Callees) {
 		if (Callee.compare(0, 5, "llvm.") != 0 &&
@@ -2457,12 +2459,11 @@ static void Write2Json(std::ostream& os, const FunctionPairs &FunctionPairVec) {
     os << "[\n";
     bool firstPair = true; // Used to handle commas between JSON objects
     for (size_t i = 0; i < FunctionPairVec.size(); ++i) {
-        const FunctionPair& pair = FunctionPairVec[i];
+        FunctionPair pair = FunctionPairVec[i];
         if (!firstPair) {
             os << ",\n"; // Add a comma between JSON objects
         }
         firstPair = false;
-
         // Output each function pair as a JSON object
         os << "  [\"" << pair[0] << "\" , \"" << pair[1] << "\"]";
     }
@@ -2481,10 +2482,10 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 	//PrintMaps();
 	//errs() << "size: " << MLTypeFuncMap.size() << "\n";
 
-	errs() << "Identify indirect call targets with SMLTA..." << "\n";	
+	//errs() << "Identify indirect call targets with SMLTA..." << "\n";	
 	for (Module::iterator f = M->begin(), fe = M->end(); f != fe; ++f) {		
 		Function *F = &*f;
-		
+		OP << "Module: " << M->getName() << "\n";
 		// Skip dead functions
 		if (F->use_empty() && (F->getName().str() != "main")) {
 			continue;
@@ -2525,15 +2526,16 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 	string moduleName = getFileName(M->getName().str());
 	string directory = getDirectory(M->getName().str());
 	string outputFilePath = directory + "callgraph-" + moduleName + ".json";
-	OP << "outputFilePath : " << outputFilePath << "\n";
+
 	std::ofstream outFile(outputFilePath);
     if (!outFile) {
         std::cerr << "Failed to open file for writing.\n";
         return 1;
     }
+	
 	RemoveDuplicated(FunctionPairVec);
 	Write2Json(outFile, FunctionPairVec);
-	OP << "output to " << outputFilePath << "\n";
+	//OP << "output to " << outputFilePath << "\n";
 	FunctionPairVec.clear();
 
 	//for (auto it=LayerNumSet.cbegin(); it!=LayerNumSet.cend(); it++) {
