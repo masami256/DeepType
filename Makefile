@@ -1,5 +1,5 @@
 CUR_DIR = $(shell pwd)
-LLVM_BUILD := /home/masami/projects/mlta/llvm-project/build
+LLVM_BUILD := /home/masami/projects/linux-kernel-fuzzing/work/opt/llvm-15.0.7
 ANALYZER_DIR := ${CUR_DIR}/src
 ANALYZER_BUILD := ${CUR_DIR}/build
 
