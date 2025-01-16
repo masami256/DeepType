@@ -47,7 +47,26 @@ using namespace std;
 extern cl::opt<unsigned> VerboseLevel;
 
 // Call graph
-typedef std::vector<std::string> FunctionPair; // [Caller, Callee]
+struct FunctionPair {
+  std::string ModuleName;
+  std::string CallerName;
+  std::string CalleeName;
+  bool isIndirectCall;
+
+  // Comparison operator overload (used as the sorting criterion)
+  bool operator<(const FunctionPair &other) const {
+      return std::tie(ModuleName, CallerName, CalleeName, isIndirectCall) <
+              std::tie(other.ModuleName, other.CallerName, other.CalleeName, other.isIndirectCall);
+  }
+
+  // Equality operator overload (used as the criterion for duplicate detection)
+  bool operator==(const FunctionPair &other) const {
+      return std::tie(ModuleName, CallerName, CalleeName, isIndirectCall) ==
+              std::tie(other.ModuleName, other.CallerName, other.CalleeName, other.isIndirectCall);
+  }
+};
+
+//typedef std::vector<std::string> FunctionPair; // [Caller, Callee]
 typedef std::vector<FunctionPair> FunctionPairs; // Array of FunctionPair
 
 //
