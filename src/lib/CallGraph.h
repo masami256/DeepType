@@ -135,8 +135,8 @@ class CallGraphPass : public IterativeModulePass {
 		StrSet UpdateCumuTySet(StrSet CumuTySet, int map, std::string LayerType);
 		StrSet CoverAll(StrSet CumuTySet, int map);
 		void printSet(StrSet Set);
-		void CreateJsonData(CallInst *CI, FuncSet FS);
-		void AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees);
+		void CreateJsonData(CallInst *CI, FuncSet FS, bool isIndirectCall);
+		void AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees, bool isIndirectCall);
 
 	public:
 		CallGraphPass(GlobalContext *Ctx_)

@@ -24,6 +24,7 @@
 #include <utility>
 #include <iostream>
 #include <fstream>
+#include <unistd.h>
 #include <bits/stdc++.h>
 #include "llvm/IR/CFG.h" 
 #include "llvm/Transforms/Utils/BasicBlockUtils.h" 
@@ -2138,7 +2139,7 @@ void CallGraphPass::FindCalleesWithSMLTA(CallInst *CI) {
 		TargetLookupMap[stringHash(MLTypeName)] = FS;
 	}
 	
-	CreateJsonData(CI, FS);
+	CreateJsonData(CI, FS, true);
 	// Statistics
 	errs() << "\n";
 	PrintResults(CI, FS, MLTypeName);
@@ -2277,25 +2278,33 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 	// if (Caller->getName() == "ksys_read")
 	//OP << "TEST: " << __func__ << " : " << "Caller: " << Caller->getName() << " : Callee: " << CV->getName() << " : Type: " << MLTypeName << " : FS.size : " << FS.size() << "\n";
 	// Statistics
-	CreateJsonData(CI, FS);
+	CreateJsonData(CI, FS, false);
 	PrintResults(CI, FS, MLTypeName);
 	errs() << "\n";
 	errs() << "\n";
 }
 
-void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees)
+void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees, bool isIndirectCall)
 {
 	for (string Callee : Callees) {
 		if (Callee.compare(0, 5, "llvm.") != 0 &&
 			!Callee.empty()) {
-			//OP << "Add: " << Caller << " , " << Callee << "\n";
-			FunctionPair pair = {Caller, Callee};
-			FunctionPairVec.push_back(pair);
+			char absPath[PATH_MAX] = { 0 };
+			realpath(ModuleName.c_str(), absPath);
+
+			struct FunctionPair FP = {
+				.ModuleName = absPath,
+				.CallerName = Caller,
+				.CalleeName = Callee,
+				.isIndirectCall =isIndirectCall,
+			};
+
+			FunctionPairVec.push_back(FP);
 		}
 	}
 }
 
-void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS) {
+void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS, bool isIndirectCall) {
 	// Print Call site index
 	string Caller = CI->getFunction()->getName().str();
 	Module *M = CI->getParent()->getParent()->getParent();
@@ -2314,7 +2323,7 @@ void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS) {
 		//	OP << "Module: " << M->getName() << " : Caller: " << Caller << " : Callee: " << Callee << "\n";
 		//}
 	}
-	AddCallGraph(M->getName().str(), Caller, CalleeFuncNameVec);
+	AddCallGraph(M->getName().str(), Caller, CalleeFuncNameVec, isIndirectCall);
 }
 
 void CallGraphPass::PrintMaps() {
@@ -2466,10 +2475,18 @@ static void Write2Json(std::ostream& os, const FunctionPairs &FunctionPairVec) {
         FunctionPair pair = FunctionPairVec[i];
         if (!firstPair) {
             os << ",\n"; // Add a comma between JSON objects
+			firstPair = false;
         }
-        firstPair = false;
-        // Output each function pair as a JSON object
-        os << "  [\"" << pair[0] << "\" , \"" << pair[1] << "\"]";
+
+        os  << "  {\n"
+			<< "    \"CallerName\": \"" << pair.CallerName << "\",\n"
+			<< "    \"CalleeName\": \"" << pair.CalleeName << "\",\n"
+			<< "    \"Modulename\": \"" << pair.ModuleName << "\",\n"
+			<< "    \"isIndirectCall\": " << (pair.isIndirectCall ? "true" : "false") << "\n"
+			<< "  }";
+
+		if (i < FunctionPairVec.size() - 1) 
+			os << ",\n";
     }
     os << "\n]\n"; // Close the JSON array
 }
@@ -2541,6 +2558,8 @@ bool CallGraphPass::IdentifyTargets(Module *M) {
 	
 	RemoveDuplicated(FunctionPairVec);
 	Write2Json(outFile, FunctionPairVec);
+	outFile.close();
+
 	//OP << "output to " << outputFilePath << "\n";
 	FunctionPairVec.clear();
 
