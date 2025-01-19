@@ -2284,7 +2284,7 @@ void CallGraphPass::FindCalleesForDirectCall(CallInst *CI) {
 	errs() << "\n";
 }
 
-void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees, bool isIndirectCall)
+void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::string> &Callees, bool isIndirectCall, unsigned int SourceLine)
 {
 	for (string Callee : Callees) {
 		if (Callee.compare(0, 5, "llvm.") != 0 &&
@@ -2297,6 +2297,7 @@ void CallGraphPass::AddCallGraph(string ModuleName, string Caller, vector<std::s
 				.CallerName = Caller,
 				.CalleeName = Callee,
 				.isIndirectCall =isIndirectCall,
+				.SourceLine = SourceLine,
 			};
 
 			FunctionPairVec.push_back(FP);
@@ -2310,6 +2311,13 @@ void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS, bool isIndirectCall
 	Module *M = CI->getParent()->getParent()->getParent();
 	vector<std::string> CalleeFuncNameVec;
 
+	
+	const llvm::DebugLoc &debugLoc = CI->getDebugLoc();
+	unsigned line = 0;
+	if(debugLoc) {
+		line = debugLoc.getLine();
+	}
+
 	if (FS.empty()) {
 		string Callee = CI->getCalledOperand()->getName().str();
 		CalleeFuncNameVec.push_back(Callee);
@@ -2319,7 +2327,7 @@ void CallGraphPass::CreateJsonData(CallInst *CI, FuncSet FS, bool isIndirectCall
 		}
 		std::sort(CalleeFuncNameVec.begin(), CalleeFuncNameVec.end());
 	}
-	AddCallGraph(M->getName().str(), Caller, CalleeFuncNameVec, isIndirectCall);
+	AddCallGraph(M->getName().str(), Caller, CalleeFuncNameVec, isIndirectCall, line);
 }
 
 void CallGraphPass::PrintMaps() {
@@ -2478,7 +2486,8 @@ static void Write2Json(std::ostream& os, const FunctionPairs &FunctionPairVec) {
 			<< "    \"CallerName\": \"" << pair.CallerName << "\",\n"
 			<< "    \"CalleeName\": \"" << pair.CalleeName << "\",\n"
 			<< "    \"ModuleName\": \"" << pair.ModuleName << "\",\n"
-			<< "    \"isIndirectCall\": " << (pair.isIndirectCall ? "true" : "false") << "\n"
+			<< "    \"isIndirectCall\": " << (pair.isIndirectCall ? "true" : "false") << ",\n"
+			<< "    \"SourceLine\": " << pair.SourceLine << "\n"
 			<< "  }";
 
 		if (i < FunctionPairVec.size() - 1) 
