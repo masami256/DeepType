@@ -52,6 +52,7 @@ struct FunctionPair {
   std::string CallerName;
   std::string CalleeName;
   bool isIndirectCall;
+  unsigned int SourceLine;
 
   // Comparison operator overload (used as the sorting criterion)
   bool operator<(const FunctionPair &other) const {
