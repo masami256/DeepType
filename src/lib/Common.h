@@ -9,7 +9,7 @@
 #include <llvm/IR/DebugInfo.h>
 
 #include <unistd.h>
-#include <z3/z3.h>
+#include <z3.h>
 #include <bitset>
 #include <chrono>
 
